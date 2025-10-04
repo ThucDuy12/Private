@@ -4,7 +4,7 @@ const path = require('path');
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, SelectMenuBuilder } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { Worker } = require('worker_threads');
-const http = require('http'); // Thêm để tạo server HTTP
+const axios = require('axios');
 
 // CONFIG
 const TOKEN = process.env.DISCORD_TOKEN; // bắt buộc
@@ -13,6 +13,7 @@ const REPENT_CHANNEL_ID = process.env.REPENT_CHANNEL_ID || '1413556917707472896'
 const GROUP_FLIGHT_CHANNEL_ID = process.env.GROUP_FLIGHT_CHANNEL_ID || '1366417558395289640';
 const GUILD_ID = process.env.GUILD_ID || '1365693391668777051';
 const OWNER_ID = process.env.OWNER_ID;
+const RENDER_URL = process.env.RENDER_URL; // Thêm vào .env: RENDER_URL=https://your-bot.onrender.com
 
 if (!TOKEN) {
   console.error('Missing DISCORD_TOKEN in environment. Create a .env file or set env variable.');
@@ -21,6 +22,11 @@ if (!TOKEN) {
 
 if (!OWNER_ID) {
   console.error('Missing OWNER_ID in environment. Add it to .env file.');
+  process.exit(1);
+}
+
+if (!RENDER_URL) {
+  console.error('Missing RENDER_URL in environment. Add it to .env file (e.g., https://your-bot.onrender.com).');
   process.exit(1);
 }
 
@@ -123,11 +129,14 @@ client.once('ready', async () => {
   setInterval(() => vatsimWorker.postMessage('update'), periodMs);
   console.log(`VATSIM updater running: immediate + every ${periodMs / 60000} minutes`);
 
-  // Add counter to keep bot awake
-  let counter = 0;
-  setInterval(() => {
-    counter++;
-    console.log(`Wake-up counter: ${counter}`);
+  // Self-ping every 15 minutes to keep Render awake
+  setInterval(async () => {
+    try {
+      await axios.get(RENDER_URL);
+      console.log('Self-ping successful to keep bot awake');
+    } catch (err) {
+      console.error('Self-ping failed:', err.message);
+    }
   }, 15 * 60 * 1000); // Every 15 minutes
 });
 
@@ -526,12 +535,3 @@ async function ensureVatsimMessageExists() {
 }
 
 client.login(TOKEN);
-
-// Tạo server HTTP đơn giản để Render ping giữ bot online
-const port = process.env.PORT || 3000;
-http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Bot is alive!');
-}).listen(port, () => {
-  console.log(`HTTP server listening on port ${port} for Render keep-alive`);
-});
