@@ -4,6 +4,7 @@ const path = require('path');
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, SelectMenuBuilder } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { Worker } = require('worker_threads');
+const http = require('http'); // Thêm để tạo server HTTP
 
 // CONFIG
 const TOKEN = process.env.DISCORD_TOKEN; // bắt buộc
@@ -525,3 +526,12 @@ async function ensureVatsimMessageExists() {
 }
 
 client.login(TOKEN);
+
+// Tạo server HTTP đơn giản để Render ping giữ bot online
+const port = process.env.PORT || 3000;
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Bot is alive!');
+}).listen(port, () => {
+  console.log(`HTTP server listening on port ${port} for Render keep-alive`);
+});
